@@ -1,8 +1,12 @@
 # WW Screenshot Food Tracker
 
-A small project to extract WeightWatchers meal entries from screenshots, convert them into a JSON intermediate format, and track them via the WW API.
+A small AI-agent project to extract WeightWatchers meal entries from screenshots, convert them into a JSON intermediate format, and track them via the WW API through Telegram.
 
-Ein kleines Projekt, um WeightWatchers-Essen aus Screenshots zu erkennen, in ein JSON-Zwischenformat zu konvertieren und per WW-API automatisiert zu tracken.
+Ein kleines AI-Agent-Projekt, um WeightWatchers-Essen aus Screenshots zu erkennen, in ein JSON-Zwischenformat zu konvertieren und per WW-API über Telegram automatisiert zu tracken.
+
+This project was developed end-to-end with Codex 5.3 and OpenClaw (Clawd) to automate screenshot-based food tracking in Telegram.
+
+Hintergrund: Eriks Freundin Mona bereitet dankenswerterweise oft das Essen vor und trackt es bereits bei sich. Ziel dieses Projekts ist, diesen Prozess für Erik vollständig per Screenshot-Workflow zu automatisieren.
 
 ## English
 
