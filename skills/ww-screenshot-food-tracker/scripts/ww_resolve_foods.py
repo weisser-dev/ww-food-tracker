@@ -140,22 +140,44 @@ def _extract_portions(hit: dict[str, Any]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
 
+    # Fast path: WW detail payload usually has `portions` list with `_id` + `name`.
+    portions = hit.get("portions")
+    if isinstance(portions, list):
+        for p in portions:
+            if not isinstance(p, dict):
+                continue
+            pid = p.get("_id") or p.get("id") or p.get("portionId") or p.get("servingId")
+            pname = p.get("name") or p.get("_servingDesc") or p.get("displayName") or p.get("portionName")
+            if pid is None or pname is None:
+                continue
+            sid = str(pid)
+            if sid in seen:
+                continue
+            seen.add(sid)
+            out.append(
+                {
+                    "id": sid,
+                    "name": str(pname),
+                    "isDefault": bool(p.get("isDefault") or p.get("default")),
+                }
+            )
+
     def looks_like_portion(node: dict[str, Any]) -> bool:
         # Avoid treating a full food hit as a portion just because it has `portionId`.
-        if any(k in node for k in ("versionId", "sourceType", "points", "pointValue", "foodId")):
+        if any(k in node for k in ("versionId", "sourceType", "foodId")):
             return False
-        portion_hints = {"portionName", "displayName", "unit", "isDefault", "gramWeight", "measurement"}
+        portion_hints = {"portionName", "displayName", "unit", "isDefault", "default", "gramWeight", "measurement", "_servingDesc", "weightType"}
         return any(k in node for k in portion_hints)
 
     def walk(node: Any) -> None:
         if isinstance(node, dict):
-            pid = node.get("id") or node.get("portionId") or node.get("servingId")
-            pname = node.get("name") or node.get("displayName") or node.get("portionName") or node.get("unit")
+            pid = node.get("_id") or node.get("id") or node.get("portionId") or node.get("servingId")
+            pname = node.get("name") or node.get("_servingDesc") or node.get("displayName") or node.get("portionName") or node.get("unit")
             if pid is not None and pname is not None and looks_like_portion(node):
                 sid = str(pid)
                 if sid not in seen:
                     seen.add(sid)
-                    out.append({"id": sid, "name": str(pname), "isDefault": bool(node.get("isDefault"))})
+                    out.append({"id": sid, "name": str(pname), "isDefault": bool(node.get("isDefault") or node.get("default"))})
             for v in node.values():
                 walk(v)
         elif isinstance(node, list):
