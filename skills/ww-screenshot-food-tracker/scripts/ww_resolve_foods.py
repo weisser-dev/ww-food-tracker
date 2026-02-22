@@ -71,6 +71,13 @@ def _load_foods(path: str) -> list[dict[str, Any]]:
     return out
 
 
+FALLBACK_QUERY_MAP: dict[str, list[str]] = {
+    "tomaten, cocktailtomaten/kirschtomaten/cherrytomaten": ["Cherrytomaten", "Tomaten"],
+    "cherrytomaten": ["Tomaten"],
+    "kirschtomaten": ["Cherrytomaten", "Tomaten"],
+}
+
+
 def _query_variants(name: str) -> list[str]:
     variants = [name.strip()]
     if "," in name:
@@ -80,6 +87,10 @@ def _query_variants(name: str) -> list[str]:
     words = name.replace(",", " ").split()
     if len(words) > 3:
         variants.append(" ".join(words[:3]))
+
+    # Deterministic fallbacks for problematic OCR/compound names.
+    norm = name.strip().lower()
+    variants.extend(FALLBACK_QUERY_MAP.get(norm, []))
 
     seen: set[str] = set()
     out: list[str] = []
