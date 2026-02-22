@@ -1,0 +1,4 @@
+interface:
+  display_name: "WW Screenshot Tracker"
+  short_description: "Track foods from screenshots with WW API"
+  default_prompt: "Analyze the screenshot, identify food items and portions, resolve each item with the WeightWatchers food search API, and create tracking entries with a concise confirmation."
