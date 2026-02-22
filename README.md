@@ -41,8 +41,11 @@ Workflow:
 - daily tracked meals/macros (`/api/v4/.../my-day-summary/{date}`)
 - protein goal (`protein_factor * bodyweight`, default `1.5`)
 - current protein intake and deficit
+- 13:00 checkpoint (`proteinMinimumBy13`, based on `3/8` of target)
+- calories consumed/target/remaining
 - 14-day protein average and trend
 - short meal feedback + recommendations
+- pre-rendered reminder messages (`messages.13`, `messages.19`)
 
 Example:
 
@@ -115,9 +118,12 @@ Ablauf:
 - aktuelles WW-Gewicht (`/api/v2/cmx/members/~`)
 - heutige getrackte Mahlzeiten/Makros (`/api/v4/.../my-day-summary/{date}`)
 - Proteinziel (`protein_factor * Körpergewicht`, Standard `1.5`)
+- 13:00-Checkpoint (`proteinMinimumBy13` = `3/8` vom Ziel)
+- Kalorien gegessen/Ziel/Rest
 - aktuelles Protein + Defizit
 - 14-Tage-Protein-Schnitt
 - kurzes Mahlzeiten-Feedback + Empfehlungen
+- fertig formulierte Reminder (`messages.13`, `messages.19`)
 
 Beispiel:
 
