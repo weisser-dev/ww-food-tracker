@@ -199,8 +199,20 @@ def _extract_portions(hit: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+def _normalize_text_token(s: str) -> str:
+    s = (s or "").strip().lower()
+    s = (
+        s.replace("ä", "ae")
+        .replace("ö", "oe")
+        .replace("ü", "ue")
+        .replace("ß", "ss")
+    )
+    return s
+
+
 def _canonical_unit(unit: str) -> str:
-    u = unit.strip().lower()
+    u = _normalize_text_token(unit)
+    u = re.sub(r"[^a-z0-9]+", "", u)
     aliases = {
         "gram": "g",
         "grams": "g",
@@ -224,12 +236,15 @@ def _canonical_unit(unit: str) -> str:
         "portionen": "portion",
         "packung": "packung",
         "packungen": "packung",
+        "scheibe": "scheibe",
+        "scheiben": "scheibe",
     }
     return aliases.get(u, u)
 
 
 def _portion_tokens(name: str) -> set[str]:
-    tokens = re.findall(r"[a-z0-9]+", name.lower())
+    normalized = _normalize_text_token(name)
+    tokens = re.findall(r"[a-z0-9]+", normalized)
     out = {_canonical_unit(t) for t in tokens}
     if "stuck" in out:
         out.add("stueck")
@@ -237,7 +252,7 @@ def _portion_tokens(name: str) -> set[str]:
 
 
 def _contains_gram_hint(name: str) -> bool:
-    n = name.lower()
+    n = _normalize_text_token(name)
     if re.search(r"(^|[^a-z0-9])g([^a-z0-9]|$)", n):
         return True
     if re.search(r"\bgramm?\b", n):
@@ -262,7 +277,7 @@ def _score_portion_match(unit: str, portion_name: str, is_default: bool) -> int:
         # Strongly penalize typical non-gram units when input asks for grams.
         if tokens.intersection({"stueck", "el", "tl", "portion", "packung"}):
             score -= 120
-    elif u in {"stueck", "el", "tl", "portion", "packung", "kg", "ml", "l"}:
+    elif u in {"stueck", "scheibe", "el", "tl", "portion", "packung", "kg", "ml", "l"}:
         if u in tokens:
             score += 40
 
@@ -359,7 +374,6 @@ def _choose_portion_id(input_food: dict[str, Any], portions: list[dict[str, Any]
                 return provided
 
     if unit:
-        strict_units = {"g", "kg", "ml", "l"}
         ranked = sorted(
             portions,
             key=lambda p: _score_portion_match(unit, str(p.get("name") or ""), bool(p.get("isDefault"))),
@@ -374,14 +388,7 @@ def _choose_portion_id(input_food: dict[str, Any], portions: list[dict[str, Any]
             if top_score_without_default > 0 and _has_unit_match_evidence(unit, top_name):
                 return top["id"]
 
-            # For non-strict units (e.g. Stück/Portion) fallback to best ranked/default.
-            if unit not in strict_units:
-                for p in portions:
-                    if p.get("isDefault"):
-                        return p["id"]
-                return top["id"]
-
-        # For strict units (especially grams), fail closed instead of writing wrong portions.
+        # Unit was provided but no evidence-based match found -> fail closed.
         return None
 
     for p in portions:
@@ -515,10 +522,8 @@ def run(args: argparse.Namespace) -> int:
         rpid = _choose_portion_id(food, portions)
         unit_raw = str(food.get("unit") or "").strip()
         unit_required = unit_raw != ""
-        unit_canonical = _canonical_unit(unit_raw)
-        strict_units = {"g", "kg", "ml", "l"}
         used_server_default = False
-        may_use_server_default = allow_server_default and (not unit_required or unit_canonical not in strict_units)
+        may_use_server_default = allow_server_default and (not unit_required)
         if not rpid and may_use_server_default:
             hit_pid = resolved_hit.get("portionId") or resolved_hit.get("defaultPortionId")
             if isinstance(hit_pid, (str, int)):
