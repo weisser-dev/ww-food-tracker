@@ -1,2 +1,4 @@
 skills/ww-screenshot-food-tracker/com.weightwatchers.mobile/*
 __pycache__*
+.env
+!.env.example
