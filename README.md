@@ -6,7 +6,7 @@ Ein kleines AI-Agent-Projekt, um WeightWatchers-Essen aus Screenshots zu erkenne
 
 This project was developed end-to-end with Codex 5.3 and OpenClaw (Clawd) to automate screenshot-based food tracking in Telegram.
 
-Hintergrund: Eriks Freundin Mona bereitet dankenswerterweise oft das Essen vor und trackt es bereits bei sich. Ziel dieses Projekts ist, diesen Prozess für Erik vollständig per Screenshot-Workflow zu automatisieren.
+Background: Erik’s girlfriend Mona kindly often prepares meals and already tracks them on her side. The goal of this project is to fully automate this process for Erik via a screenshot-based workflow.
 
 ## English
 
