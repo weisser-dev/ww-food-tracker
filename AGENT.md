@@ -15,6 +15,16 @@ Ein vom Nutzer gesendeter Screenshot soll in WW-Eintraege umgesetzt werden. Der 
 
 ## Verbindlicher Ablauf
 
+### 0) Datum vorab klaeren (Pflicht)
+
+Wenn der Nutzer **nur ein Bild** schickt und im Prompt **kein Datum/Tag** nennt:
+
+- zuerst immer fragen: **"Ist das Essen für heute?"**
+- bei "ja": aktuelles Datum verwenden
+- bei "nein": konkretes Datum abfragen und dann genau dafür tracken
+
+Ohne klare Datumszuordnung **nicht** blind für heute tracken.
+
 ### 1) Screenshot analysieren
 
 - Meal-Header erkennen und auf `mealTime` mappen:
@@ -60,7 +70,7 @@ Beispiel:
 
 ### 3) Tracking ausfuehren
 
-- Im Projektordner ausfuehren: `/Users/erikweisser/Documents/New project`
+- Im Projektordner ausfuehren: `/opt/ww-food-tracker`
 - Standardaufruf:
 
 ```bash
@@ -78,6 +88,31 @@ Hinweise:
 - `run_skill.sh` laedt `.env` automatisch.
 - `run_skill.sh` erzeugt zusaetzlich Resolve-/Track-JSON-Dateien in `/tmp` und gibt deren Pfade aus.
 - Das Skript meldet getrennt: neu getrackt vs. bereits vorhanden.
+
+#### Fallbacks bei "nicht aufgelöst" (wichtig)
+
+Wenn WW einzelne Items nicht auflösen kann (kommt oft bei:
+- Marken-/Produktnamen,
+- Einheiten wie `Scheibe(n)`, `Zehe(n)`, `Handvoll`,
+- zusammengesetzten Namen wie "Tomaten, Cocktailtomaten/Kirschtomaten/Cherrytomaten"),
+
+**dann**:
+
+1) **Manuell retryen** mit vereinfachtem Namen (z.B. "Cherrytomaten" statt langer Tomaten-Varianten) und **g/ml** statt Stück/Scheibe.
+2) Für Käse-Scheiben: in der Praxis funktioniert meist **g statt Scheibe**.
+   - Faustregel: **1 Scheibe ≈ 25 g** (wenn Nutzer nichts anderes sagt).
+
+Optional automatisiert:
+- `WW_FALLBACK_RETRY=true ./run_skill.sh ...` aktiviert einen zweiten Durchlauf.
+- Der zweite Durchlauf nutzt:
+  - vereinfachte Namen,
+  - Tomaten-Varianten -> `Cherrytomaten`,
+  - `Scheibe(n)` -> `g` über `WW_GRAMS_PER_SLICE` (Default **25**).
+
+Beispiel:
+```bash
+WW_FALLBACK_RETRY=true WW_GRAMS_PER_SLICE=25 ./run_skill.sh /tmp/foods_raw.json
+```
 
 ### 4) Ergebnis auswerten
 
