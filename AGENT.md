@@ -104,10 +104,13 @@ Wenn WW einzelne Items nicht auflösen kann (kommt oft bei:
 
 Optional automatisiert:
 - `WW_FALLBACK_RETRY=true ./run_skill.sh ...` aktiviert einen zweiten Durchlauf.
-- Der zweite Durchlauf nutzt:
-  - vereinfachte Namen,
+- Der zweite Durchlauf nutzt jetzt **Multi‑Candidate‑Retry** pro nicht aufgelöstem Item:
+  - Kandidaten aus **vor Komma**, **vor Slash**, (bei Bedarf) Rest‑Token,
   - Tomaten-Varianten -> `Cherrytomaten`,
   - `Scheibe(n)` -> `g` über `WW_GRAMS_PER_SLICE` (Default **25**).
+
+Artefakte:
+- `/tmp/ww_fallback_summary_<YYYY-MM-DD>.json` enthält eine Kurz‑Zusammenfassung, welche Kandidaten funktioniert haben.
 
 Beispiel:
 ```bash

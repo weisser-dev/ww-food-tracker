@@ -95,30 +95,15 @@ if [[ "$FALLBACK_RETRY_VAL_LC" == "true" || "$FALLBACK_RETRY_VAL" == "1" || "$FA
   # Default grams per slice for cheese etc. (can be overridden)
   GRAMS_PER_SLICE="${WW_GRAMS_PER_SLICE:-25}"
 
-  python3 "$SCRIPTS_DIR/ww_fallback_retry.py" \
+  echo
+  echo "==> Fallback-Retry: Nicht aufgeloeste Eintraege werden mit mehreren Kandidaten (Komma/Slash/Mapping + Scheibe->g) erneut versucht..."
+  python3 "$SCRIPTS_DIR/ww_fallback_multi.py" \
     --resolved "$RESOLVED_OUT" \
-    --output "$FALLBACK_RAW" \
-    --grams-per-slice "$GRAMS_PER_SLICE"
-
-  if python3 - "$FALLBACK_RAW" <<'PY'
-import json,sys
-p=sys.argv[1]
-try:
-  data=json.load(open(p,'r',encoding='utf-8'))
-  sys.exit(0 if isinstance(data,list) and len(data)>0 else 1)
-except Exception:
-  sys.exit(1)
-PY
-  then
-    echo
-    echo "==> Fallback-Retry: Nicht aufgeloeste Eintraege werden mit vereinfachten Namen/Einheiten erneut versucht..."
-    python3 "$SCRIPTS_DIR/ww_resolve_foods.py" --input "$FALLBACK_RAW" --output "$FALLBACK_RESOLVED"
-    python3 "$SCRIPTS_DIR/ww_track_resolved.py" --input "$FALLBACK_RESOLVED" --verify-summary > "$FALLBACK_TRACK"
-    echo "Fallback Resolved JSON: $FALLBACK_RESOLVED"
-    echo "Fallback Track Output:  $FALLBACK_TRACK"
-  else
-    rm -f "$FALLBACK_RAW" || true
-  fi
+    --scripts-dir "$SCRIPTS_DIR" \
+    --grams-per-slice "$GRAMS_PER_SLICE" \
+    --out-prefix "/tmp/ww_fallback_${TODAY}" \
+    > "/tmp/ww_fallback_summary_${TODAY}.json" || true
+  echo "Fallback Summary: /tmp/ww_fallback_summary_${TODAY}.json"
 fi
 
 echo
