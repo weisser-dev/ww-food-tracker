@@ -99,9 +99,37 @@ def dedupe(seq: Iterable[str]) -> List[str]:
     return out
 
 
-def unit_to_grams(unit: str, portion_size: float, grams_per_slice: float) -> Tuple[str, float]:
+def normalize_unit(unit: str) -> str:
+    """Normalize units so the WW resolver gets a consistent vocabulary.
+
+    We observed that qualifiers like "Stueck (klein)" can fail to resolve,
+    while the same item resolves with plain "Stueck".
+    """
     u = (unit or "").strip()
-    if u in {"Scheibe(n)", "Scheibe"} and grams_per_slice and portion_size > 0:
+
+    # Keep canonical slice spelling
+    if u in {"Scheibe", "Scheibe(n)"}:
+        return "Scheibe(n)"
+
+    # Strip trailing parenthetical qualifiers: "Stueck (klein)" -> "Stueck"
+    u = re.sub(r"\s*\([^)]*\)\s*$", "", u).strip()
+
+    # Common plurals/canonical forms
+    if u in {"Stueck", "Stück"}:
+        return "Stueck"
+    if u in {"Stange", "Stange(n)"}:
+        return "Stange(n)"
+    if u in {"Knolle", "Knolle(n)"}:
+        return "Knolle(n)"
+    if u in {"Tasse", "Tasse(n)"}:
+        return "Tasse(n)"
+
+    return u
+
+
+def unit_to_grams(unit: str, portion_size: float, grams_per_slice: float) -> Tuple[str, float]:
+    u = normalize_unit(unit)
+    if u == "Scheibe(n)" and grams_per_slice and portion_size > 0:
         return "g", portion_size * grams_per_slice
     return u, portion_size
 
