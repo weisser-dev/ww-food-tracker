@@ -58,6 +58,11 @@ def simplify_candidates(name: str) -> List[str]:
     if "tomaten" in low and any(k in low for k in ["cocktail", "kirs", "cherry"]):
         out.append("Cherrytomaten")
 
+    # Lauch/Porree special-cases (we observed repeated resolve failures)
+    if ("lauch" in low) and ("porree" in low):
+        # Try both canonical names
+        out.extend(["Porree", "Lauch"])
+
     if preserve_name(raw):
         # Keep as-is, but still allow fallbacks for unit conversions etc.
         out.append(raw)
@@ -127,10 +132,17 @@ def normalize_unit(unit: str) -> str:
     return u
 
 
-def unit_to_grams(unit: str, portion_size: float, grams_per_slice: float) -> Tuple[str, float]:
+def unit_to_mass(unit: str, portion_size: float, *, grams_per_slice: float, grams_per_stalk: float, prefer_stalk_to_grams: bool = False) -> Tuple[str, float]:
+    """Convert certain units to grams to improve WW resolver hit-rate."""
     u = normalize_unit(unit)
+
     if u == "Scheibe(n)" and grams_per_slice and portion_size > 0:
         return "g", portion_size * grams_per_slice
+
+    # Optional: convert "Stange(n)" to grams (useful for Lauch/Porree)
+    if prefer_stalk_to_grams and u == "Stange(n)" and grams_per_stalk and portion_size > 0:
+        return "g", portion_size * grams_per_stalk
+
     return u, portion_size
 
 
@@ -211,6 +223,7 @@ def main() -> int:
     ap.add_argument("--resolved", required=True)
     ap.add_argument("--scripts-dir", required=True)
     ap.add_argument("--grams-per-slice", type=float, default=25.0)
+    ap.add_argument("--grams-per-stalk", type=float, default=150.0, help="Used when converting Stange(n) -> g (e.g. Lauch/Porree)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--out-prefix", default="/tmp/ww_fallback_multi")
     args = ap.parse_args()
@@ -228,11 +241,21 @@ def main() -> int:
     for idx, item in enumerate(unresolved, start=1):
         candidates = simplify_candidates(item.name)
 
-        # Unit normalization (slice->grams) happens on the entry, not name
+        # Unit normalization/conversion happens on the entry, not name
         for cand in candidates:
             portion = float(item.portion_size)
             unit = item.unit
-            unit, portion = unit_to_grams(unit, portion, args.grams_per_slice)
+
+            # For Lauch/Porree we often need grams instead of "Stange(n)" to resolve.
+            prefer_stalk_to_grams = ("lauch" in lc(item.name) and "porree" in lc(item.name))
+
+            unit, portion = unit_to_mass(
+                unit,
+                portion,
+                grams_per_slice=args.grams_per_slice,
+                grams_per_stalk=args.grams_per_stalk,
+                prefer_stalk_to_grams=prefer_stalk_to_grams,
+            )
 
             entry = {
                 "name": cand,

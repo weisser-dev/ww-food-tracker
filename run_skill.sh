@@ -92,15 +92,17 @@ if [[ "$FALLBACK_RETRY_VAL_LC" == "true" || "$FALLBACK_RETRY_VAL" == "1" || "$FA
   FALLBACK_RESOLVED="/tmp/foods_resolved_fallback_run_skill_${TODAY}.json"
   FALLBACK_TRACK="/tmp/foods_tracked_fallback_run_skill_${TODAY}.json"
 
-  # Default grams per slice for cheese etc. (can be overridden)
+  # Default grams per slice/stalk for improved resolve (can be overridden)
   GRAMS_PER_SLICE="${WW_GRAMS_PER_SLICE:-25}"
+  GRAMS_PER_STALK="${WW_GRAMS_PER_STALK:-150}"
 
   echo
-  echo "==> Fallback-Retry: Nicht aufgeloeste Eintraege werden mit mehreren Kandidaten (Komma/Slash/Mapping + Scheibe->g) erneut versucht..."
+  echo "==> Fallback-Retry: Nicht aufgeloeste Eintraege werden mit mehreren Kandidaten (Komma/Slash/Mapping + Scheibe->g + Stange->g) erneut versucht..."
   python3 "$SCRIPTS_DIR/ww_fallback_multi.py" \
     --resolved "$RESOLVED_OUT" \
     --scripts-dir "$SCRIPTS_DIR" \
     --grams-per-slice "$GRAMS_PER_SLICE" \
+    --grams-per-stalk "$GRAMS_PER_STALK" \
     --out-prefix "/tmp/ww_fallback_${TODAY}" \
     > "/tmp/ww_fallback_summary_${TODAY}.json" || true
   echo "Fallback Summary: /tmp/ww_fallback_summary_${TODAY}.json"

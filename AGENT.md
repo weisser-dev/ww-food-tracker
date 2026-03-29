@@ -108,6 +108,7 @@ Optional automatisiert:
   - Kandidaten aus **vor Komma**, **vor Slash**, (bei Bedarf) Rest‑Token,
   - Tomaten-Varianten -> `Cherrytomaten`,
   - `Scheibe(n)` -> `g` über `WW_GRAMS_PER_SLICE` (Default **25**).
+  - Für Lauch/Porree zusätzlich: `Stange(n)` -> `g` über `WW_GRAMS_PER_STALK` (Default **150**), um Resolve-Probleme zu vermeiden.
 
 Artefakte:
 - `/tmp/ww_fallback_summary_<YYYY-MM-DD>.json` enthält eine Kurz‑Zusammenfassung, welche Kandidaten funktioniert haben.
