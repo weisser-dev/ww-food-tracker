@@ -336,6 +336,120 @@ def _fetch_recent_list(base_url: str, token: str, timeout: int, insecure: bool) 
         raise
 
 
+def _fetch_favorite_list(base_url: str, token: str, timeout: int, insecure: bool) -> dict[str, Any] | None:
+    url = f"{base_url}/api/v3/cmx/operations/composed/members/~/lists/favorite"
+    try:
+        return _request(url=url, token=token, timeout=timeout, insecure=insecure)
+    except ApiError as err:
+        if err.code in (400, 404):
+            return None
+        raise
+
+
+def _load_member_recipe_map(path: str) -> dict[str, Any] | None:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        if isinstance(data, dict) and isinstance(data.get("recipes"), dict):
+            return data
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return None
+    return None
+
+
+def _member_recipe_hit_to_candidate(hit: dict[str, Any]) -> dict[str, Any] | None:
+    """Convert a MEMBERRECIPE list hit into a resolve candidate-like dict."""
+    if not isinstance(hit, dict):
+        return None
+    if str(hit.get("sourceType") or "").upper() != "MEMBERRECIPE":
+        return None
+    rid = hit.get("_id") or hit.get("id")
+    ver = hit.get("versionId")
+    if not (rid and ver):
+        return None
+    # Portion is usually "0" and serving desc contains unit.
+    portion_id = hit.get("portionId")
+    serving_desc = str(hit.get("_servingDesc") or hit.get("servingDesc") or "Portion(en)")
+    portions = [{"id": str(portion_id or "0"), "name": serving_desc, "isDefault": True}]
+    return {
+        "_id": str(rid),
+        "versionId": str(ver),
+        "sourceType": "MEMBERRECIPE",
+        "name": str(hit.get("_displayName") or hit.get("name") or ""),
+        "portions": portions,
+        "defaultPortionId": str(portion_id or "0"),
+    }
+
+
+def _find_member_recipe_candidate(
+    name: str,
+    recipe_map: dict[str, Any] | None,
+    recent_payload: dict[str, Any] | None,
+    favorite_payload: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Try to resolve a name to a MEMBERRECIPE via (1) local map, (2) recent, (3) favorites."""
+    q = (name or "").strip()
+    if not q:
+        return None
+    q_lc = q.lower()
+
+    # 1) Local mapping (exact / case-insensitive)
+    if isinstance(recipe_map, dict):
+        recipes = recipe_map.get("recipes")
+        if isinstance(recipes, dict):
+            # exact key
+            entry = recipes.get(q)
+            if not entry:
+                # case-insensitive match
+                for k, v in recipes.items():
+                    if isinstance(k, str) and k.strip().lower() == q_lc:
+                        entry = v
+                        break
+            if isinstance(entry, dict) and entry.get("id") and entry.get("versionId"):
+                hit = {
+                    "_id": entry.get("id"),
+                    "versionId": entry.get("versionId"),
+                    "sourceType": "MEMBERRECIPE",
+                    "_displayName": q,
+                    "portionId": entry.get("portionId", "0"),
+                    "_servingDesc": entry.get("defaultUnit", "Portion(en)"),
+                }
+                cand = _member_recipe_hit_to_candidate(hit)
+                if cand:
+                    return cand
+
+    def scan(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+        if not isinstance(payload, dict):
+            return None
+        hits = payload.get("hits")
+        if not isinstance(hits, list):
+            return None
+        # Prefer exact match on displayName, then substring.
+        exact: list[dict[str, Any]] = []
+        partial: list[dict[str, Any]] = []
+        for h in hits:
+            if not isinstance(h, dict) or str(h.get("sourceType") or "").upper() != "MEMBERRECIPE":
+                continue
+            disp = str(h.get("_displayName") or h.get("name") or "").strip()
+            if not disp:
+                continue
+            d_lc = disp.lower()
+            if d_lc == q_lc:
+                exact.append(h)
+            elif q_lc in d_lc or d_lc in q_lc:
+                partial.append(h)
+        for bucket in (exact, partial):
+            for h in bucket:
+                cand = _member_recipe_hit_to_candidate(h)
+                if cand:
+                    return cand
+        return None
+
+    return scan(recent_payload) or scan(favorite_payload)
+
+
 def _find_portions_in_payload(payload: Any, food_id: str, version_id: str | None) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -428,6 +542,8 @@ def run(args: argparse.Namespace) -> int:
 
     extra_params = dict(urllib.parse.parse_qsl(extra_raw, keep_blank_values=False)) if extra_raw.strip() else {}
     recent_cache: dict[str, Any] | None = None
+    member_recipe_cache: dict[str, Any] | None = None
+    favorites_recipe_cache: dict[str, Any] | None = None
 
     items: list[dict[str, Any]] = []
     for food in foods:
@@ -488,6 +604,35 @@ def run(args: argparse.Namespace) -> int:
                 break
 
         if not resolved_hit:
+            # As a fallback, try to resolve as a MEMBERRECIPE (custom user recipe)
+            # via local mapping + recent/favorite lists.
+            recipe_map_path = os.getenv("WW_MEMBER_RECIPE_MAP", os.path.join(os.path.dirname(__file__), "..", "..", "..", "member_recipes_map.json"))
+            recipe_map = _load_member_recipe_map(recipe_map_path)
+            if member_recipe_cache is None:
+                member_recipe_cache = _fetch_recent_list(base_url=base_url, token=token, timeout=timeout, insecure=insecure) or {}
+            if favorites_recipe_cache is None:
+                favorites_recipe_cache = _fetch_favorite_list(base_url=base_url, token=token, timeout=timeout, insecure=insecure) or {}
+            mr = _find_member_recipe_candidate(food["name"], recipe_map, member_recipe_cache, favorites_recipe_cache)
+            if mr:
+                portions = _extract_portions(mr)
+                items.append(
+                    {
+                        **food,
+                        "status": "resolved",
+                        "resolved": {
+                            "id": _resolve_id(mr),
+                            "versionId": _resolve_version_id(mr),
+                            "sourceType": _resolve_source_type(mr) or "MEMBERRECIPE",
+                            "displayName": mr.get("name", food["name"]),
+                            "portionCandidates": portions,
+                            "portionId": _choose_portion_id(food, portions) or (portions[0]["id"] if portions else None),
+                            "matchedPath": "/api/v3/cmx/operations/composed/members/~/lists/(recent|favorite)",
+                            "matchedQuery": food["name"],
+                            "warnings": ["resolved_via_member_recipe_list"],
+                        },
+                    }
+                )
+                continue
             items.append({**food, "status": "not_found", "resolved": None})
             continue
 

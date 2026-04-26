@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "notes": "Map displayName -> MEMBERRECIPE identifiers. Fill entries as you discover/share them.",
+  "recipes": {
+    "Zwiebelbrötchen a la Moni": {
+      "id": "69b686506099acfb1e356b71",
+      "versionId": "69b686506099acfb1e356b72",
+      "portionId": "0",
+      "defaultUnit": "Portion(en)"
+    }
+  }
+}

@@ -92,6 +92,7 @@ Hinweise:
 #### Fallbacks bei "nicht aufgelöst" (wichtig)
 
 Wenn WW einzelne Items nicht auflösen kann (kommt oft bei:
+- **eigenen Member-Rezepten** (z.B. "… a la Moni", "Monis Cheesecake"),
 - Marken-/Produktnamen,
 - Einheiten wie `Scheibe(n)`, `Zehe(n)`, `Handvoll`,
 - zusammengesetzten Namen wie "Tomaten, Cocktailtomaten/Kirschtomaten/Cherrytomaten"),
@@ -104,6 +105,13 @@ Wenn WW einzelne Items nicht auflösen kann (kommt oft bei:
 
 Optional automatisiert:
 - `WW_FALLBACK_RETRY=true ./run_skill.sh ...` aktiviert einen zweiten Durchlauf.
+
+Member-Rezepte (Custom Recipes):
+- Wenn ein Eintrag **nicht gefunden** wird, versucht der Resolver zusätzlich **MEMBERRECIPE** über:
+  - lokale Map `member_recipes_map.json` (Repo-Root)
+  - und als Fallback die WW-Listen-Endpunkte `lists/recent` + `lists/favorite`.
+- Damit funktionieren Dinge wie **"Zwiebelbrötchen a la Moni"** automatisch, sobald das Rezept in Recent/Favorites auftaucht.
+
 - Der zweite Durchlauf nutzt jetzt **Multi‑Candidate‑Retry** pro nicht aufgelöstem Item:
   - Kandidaten aus **vor Komma**, **vor Slash**, (bei Bedarf) Rest‑Token,
   - Tomaten-Varianten -> `Cherrytomaten`,
