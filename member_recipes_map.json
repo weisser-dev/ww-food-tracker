@@ -1,12 +1,42 @@
 {
   "version": 1,
-  "notes": "Map displayName -> MEMBERRECIPE identifiers. Fill entries as you discover/share them.",
+  "notes": "Auto-generated from WW favorites (MEMBERRECIPE).",
   "recipes": {
+    "Monis Fantakuchen": {
+      "id": "69edc125374a91bc7740fd03",
+      "versionId": "69edc125374a91bc7740fd04",
+      "portionId": "0",
+      "defaultUnit": "1 Portion(en)"
+    },
+    "Monis Zitronenoats": {
+      "id": "69c8f8ab6be4e07f5b4296cb",
+      "versionId": "69c8f8ab6be4e07f5b4296cc",
+      "portionId": "0",
+      "defaultUnit": "1 Portion(en)"
+    },
+    "Monis Marmorkuchen": {
+      "id": "69bd91d66665500149293223",
+      "versionId": "69bd91d66665500149293224",
+      "portionId": "0",
+      "defaultUnit": "1 Portion(en)"
+    },
+    "Monis Cheesecake": {
+      "id": "69b6bac24b66ea68685c351f",
+      "versionId": "69b6bac24b66ea68685c3520",
+      "portionId": "0",
+      "defaultUnit": "1 Portion(en)"
+    },
     "Zwiebelbrötchen a la Moni": {
       "id": "69b686506099acfb1e356b71",
       "versionId": "69b686506099acfb1e356b72",
       "portionId": "0",
-      "defaultUnit": "Portion(en)"
+      "defaultUnit": "1 Portion(en)"
+    },
+    "Carrotcake a la Moni": {
+      "id": "69b678df59758899c0a395f2",
+      "versionId": "69b678df59758899c0a395f3",
+      "portionId": "0",
+      "defaultUnit": "1 Portion(en)"
     }
   }
 }
